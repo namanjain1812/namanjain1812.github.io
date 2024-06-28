@@ -1,6 +1,6 @@
 const chessboard = document.getElementById('chessboard');
 let selectedPiece = null; // Store the currently selected piece
-
+let isWhiteTurn = true;
 
 // Function to create a chessboard square
 function createSquare(row, col) {
@@ -89,11 +89,16 @@ chessboard.addEventListener('click', (event) => {
         const piece = clickedSquare.querySelector('.piece');
         console.log(piece);
         if (piece) {
-          selectedPiece = {
-            element: piece,
-            row,
-            col
-          };
+            const pieceColor = piece.classList[1].split('-')[0];
+            if ((isWhiteTurn && pieceColor === 'white') || (!isWhiteTurn && pieceColor === 'black')) {
+                selectedPiece = {
+                    element: piece,
+                    row,
+                    col
+                };
+
+            }
+            
           console.log(selectedPiece);
           // Highlight valid moves (optional) - you'll need to implement this
           // highlightMoves(selectedPiece); 
@@ -104,8 +109,15 @@ chessboard.addEventListener('click', (event) => {
 
 // Function to check if a move is valid
 function isValidMove(piece, newRow, newCol) {
+    console.log(piece.element.classList);
     const pieceType = piece.element.classList[1]; // Get the piece type (e.g., 'white-rook', 'black-pawn') 
-    
+    // const pieceType =  piece.element ? piece.element.classList[1] : piece.element.classList;
+    // if (piece.element instanceof HTMLElement) { 
+    //     pieceType = piece.element.classList[1]; 
+    //   } else {
+    //     pieceType = piece.element.classList[0]; // Assuming your simulated object
+    //   }
+    console.log(pieceType);
     // Basic validation (replace with more specific rules for each piece):
     let isValidPieceMove = false;
     if (pieceType === 'white-pawn' || pieceType === 'black-pawn') {
@@ -121,6 +133,7 @@ function isValidMove(piece, newRow, newCol) {
     } else if (pieceType === 'white-queen' || pieceType === 'black-queen') {
         isValidPieceMove = isValidQueenMove(piece, newRow, newCol);
     }    
+    // console.log(isValidPieceMove);
     // 2. Check for Self-Check ONLY IF the piece's move is valid:
     if (isValidPieceMove) {
         // ... (perform the hypothetical move and check for self-check as in the previous example) ...
@@ -132,7 +145,7 @@ function isValidMove(piece, newRow, newCol) {
 
         // *** 2. Check for Self-Check: ***
         const playerColor = piece.element.classList[1].split('-')[0];
-
+        console.log(playerColor);
         if (isKingInCheck(playerColor)) {
             // ... undo the move and return false (illegal move) ...
             // *** 3. Undo the Hypothetical Move: *** 
@@ -156,7 +169,7 @@ function isValidMove(piece, newRow, newCol) {
 function movePiece(piece, newRow, newCol) {
     const oldRow = piece.row;
     const oldCol = piece.col;
-    console.log(piece.element.classList[1].split('-')[0]);
+    // console.log(piece.element.classList[1].split('-')[0]);
     // Check if the opponent is now in check:
   if (isKingInCheck(piece.element.classList[1].split('-')[0] === 'white' ? 'black' : 'white')) {
     console.log("Opponent is in Check!"); // Or update UI to indicate check
@@ -183,6 +196,9 @@ function movePiece(piece, newRow, newCol) {
     // Update the piece's internal position
     piece.row = newRow;
     piece.col = newCol;
+    
+    // Switch turns AFTER a successful move
+    isWhiteTurn = !isWhiteTurn; 
 }
 // --- Piece-Specific Movement Logic ---
   
@@ -351,6 +367,8 @@ function isKingInCheck(kingColor) {
         if (pieceCode && pieceCode === `${kingColor}-king`) { // Match pieceCode with king color
           kingRow = row;
           kingCol = col;
+        //   console.log(pieceCode);
+        //   console.log(kingRow,kingCol);
           break; // Found the king, exit the inner loop
         }
       }
@@ -368,8 +386,8 @@ function isKingInCheck(kingColor) {
           // Important: Assume a hypothetical move, DON'T actually move the piece
           if (isValidMove(piece, kingRow, kingCol)) { 
             // If an opponent's piece can "attack" the king's square, the king is in check
+            // console.log("King is in check");
             return true; 
-            console.log("King is in check");
           }
         }
       }
