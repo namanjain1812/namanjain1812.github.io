@@ -107,220 +107,125 @@ chessboard.addEventListener('click', (event) => {
     }
 });
 
-// Function to check if a move is valid
-function isValidMove(piece, newRow, newCol) {
-    console.log(piece.element.classList);
-    const pieceType = piece.element.classList[1]; // Get the piece type (e.g., 'white-rook', 'black-pawn') 
-    // const pieceType =  piece.element ? piece.element.classList[1] : piece.element.classList;
-    // if (piece.element instanceof HTMLElement) { 
-    //     pieceType = piece.element.classList[1]; 
-    //   } else {
-    //     pieceType = piece.element.classList[0]; // Assuming your simulated object
-    //   }
-    console.log(pieceType);
-    // Basic validation (replace with more specific rules for each piece):
-    let isValidPieceMove = false;
-    if (pieceType === 'white-pawn' || pieceType === 'black-pawn') {
-        isValidPieceMove = isValidPawnMove(piece, newRow, newCol);
-    } else if (pieceType === 'white-rook' || pieceType === 'black-rook') {
-        isValidPieceMove = isValidRookMove(piece, newRow, newCol);
-    } else if (pieceType === 'white-knight' || pieceType === 'black-knight') {
-        isValidPieceMove = isValidKnightMove(piece, newRow, newCol);
-    } else if (pieceType === 'white-bishop' || pieceType === 'black-bishop') {
-        isValidPieceMove = isValidBishopMove(piece, newRow, newCol);
-    } else if (pieceType === 'white-king' || pieceType === 'black-king') {
-        isValidPieceMove = isValidKingMove(piece, newRow, newCol);
-    } else if (pieceType === 'white-queen' || pieceType === 'black-queen') {
-        isValidPieceMove = isValidQueenMove(piece, newRow, newCol);
-    }    
-    // console.log(isValidPieceMove);
-    // 2. Check for Self-Check ONLY IF the piece's move is valid:
-    if (isValidPieceMove) {
-        // ... (perform the hypothetical move and check for self-check as in the previous example) ...
-        // *** 1. Hypothetical Move on the Board Array: ***
-        const oldRow = piece.row;
-        const oldCol = piece.col;
-        board[newRow][newCol] = board[oldRow][oldCol]; // Place piece in the new position
-        board[oldRow][oldCol] = null;                 // Clear the old position
-
-        // *** 2. Check for Self-Check: ***
-        const playerColor = piece.element.classList[1].split('-')[0];
-        console.log(playerColor);
-        if (isKingInCheck(playerColor)) {
-            // ... undo the move and return false (illegal move) ...
-            // *** 3. Undo the Hypothetical Move: *** 
-            board[oldRow][oldCol] = board[newRow][newCol]; // Put piece back 
-            board[newRow][newCol] = null;                // Clear new position 
-
-            return false; // Move is illegal (self-check)
-
-        } 
-        // *** 4. Undo the Hypothetical Move (if the move was valid): ***
-        board[oldRow][oldCol] = board[newRow][newCol]; // Put piece back
-        board[newRow][newCol] = null;                // Clear new position
-    // ... undo the move (even if it was valid) ... 
-  }
-
-  return isValidPieceMove; // Return the result of piece-specific validation
-    
-}
-  
-// Function to move a piece
-function movePiece(piece, newRow, newCol) {
-    const oldRow = piece.row;
-    const oldCol = piece.col;
-    // console.log(piece.element.classList[1].split('-')[0]);
-    // Check if the opponent is now in check:
-  if (isKingInCheck(piece.element.classList[1].split('-')[0] === 'white' ? 'black' : 'white')) {
-    console.log("Opponent is in Check!"); // Or update UI to indicate check
-    // ... you'll likely need additional logic to handle checkmate later
-  }
-
-
-    // 1. Update the board array
-    board[newRow][newCol] = board[oldRow][oldCol]; // Move the piece
-    board[oldRow][oldCol] = null; // Clear the old square
-
-    // 2. Update the DOM
-    const newSquare = document.getElementById(`square-${newRow}-${newCol}`);
-    newSquare.appendChild(piece.element); 
-
-    // *** HANDLE CAPTURES IN THE DOM ***
-   const existingPiece = newSquare.querySelector('.piece'); // Check for a piece on target square
-   if (existingPiece) {
-       newSquare.removeChild(existingPiece); // Remove the captured piece from the DOM
-   }
-
-   newSquare.appendChild(piece.element); // Move the capturing piece
-
-    // Update the piece's internal position
-    piece.row = newRow;
-    piece.col = newCol;
-    
-    // Switch turns AFTER a successful move
-    isWhiteTurn = !isWhiteTurn; 
-}
 // --- Piece-Specific Movement Logic ---
   
 // Pawn Movement (basic - no en passant or promotion yet)
-function isValidPawnMove(piece, newRow, newCol) {
+function isValidPawnMove(piece, newRow, newCol, boardToUse) {
     const { row, col } = piece;
-    const isWhite = piece.element.classList.contains('white-pawn'); 
-  
-    const direction = isWhite ? -1 : 1; // White pawns move up, black pawns move down
-  
-    // One square forward (or two from starting position)
-    if (newCol === col && newRow === row + direction && !isPieceAt(newRow, newCol)) {
-      return true; 
-    } 
-  
+    const pieceType = typeof piece.element === 'string' ? piece.element : piece.element.classList[1];
+    const isWhite = pieceType.startsWith('white');
+
+    const direction = isWhite ? -1 : 1;
+
+    // One square forward
+    if (newCol === col && newRow === row + direction && !isPieceAt(newRow, newCol, boardToUse)) {
+        return true;
+    }
+
     // Two squares forward (only from starting position)
-    if (isWhite && row === 6 && newRow === 4 && newCol === col && !isPieceAt(newRow, newCol) && !isPieceAt(row + direction, col)) {
-      return true; 
+    if (isWhite && row === 6 && newRow === 4 && newCol === col && 
+        !isPieceAt(newRow, newCol, boardToUse) && !isPieceAt(row + direction, col, boardToUse)) {
+        return true;
     }
-    if (!isWhite && row === 1 && newRow === 3 && newCol === col && !isPieceAt(newRow, newCol) && !isPieceAt(row + direction, col)) {
-      return true;
+    if (!isWhite && row === 1 && newRow === 3 && newCol === col && 
+        !isPieceAt(newRow, newCol, boardToUse) && !isPieceAt(row + direction, col, boardToUse)) {
+        return true;
     }
-  
-    // Diagonal capture (one square diagonally)
-    if (Math.abs(newCol - col) === 1 && newRow === row + direction && isPieceAt(newRow, newCol) && isOpponentPiece(piece, newRow, newCol)) {
-      return true;
+
+    // Diagonal capture
+    if (Math.abs(newCol - col) === 1 && newRow === row + direction && 
+        isPieceAt(newRow, newCol, boardToUse) && isOpponentPiece(piece, newRow, newCol, boardToUse)) {
+        return true;
     }
-  
+
     return false;
 }
   
 // Rook Movement (horizontal and vertical)
-function isValidRookMove(piece, newRow, newCol) {
+function isValidRookMove(piece, newRow, newCol, boardToUse) {
     const { row, col } = piece;
-  
+
     // Check if moving horizontally or vertically
     if (newRow === row || newCol === col) {
-      // Check for obstacles (pieces in the path)
-      if (newRow === row) {
-        for (let c = Math.min(col, newCol) + 1; c < Math.max(col, newCol); c++) {
-          if (isPieceAt(newRow, c)) return false;
+        // Check for obstacles (pieces in the path)
+        if (newRow === row) {
+            for (let c = Math.min(col, newCol) + 1; c < Math.max(col, newCol); c++) {
+                if (isPieceAt(newRow, c, boardToUse)) return false;
+            }
+        } else {
+            for (let r = Math.min(row, newRow) + 1; r < Math.max(row, newRow); r++) {
+                if (isPieceAt(r, newCol, boardToUse)) return false;
+            }
         }
-      } else {
-        for (let r = Math.min(row, newRow) + 1; r < Math.max(row, newRow); r++) {
-          if (isPieceAt(r, newCol)) return false;
-        }
-      }
-      // Check if the destination is empty or an opponent's piece
-      return !isPieceAt(newRow, newCol) || isOpponentPiece(piece, newRow, newCol); 
+        // Check if the destination is empty or an opponent's piece
+        return !isPieceAt(newRow, newCol, boardToUse) || isOpponentPiece(piece, newRow, newCol, boardToUse);
     }
-  
+
     return false;
 }
   
 // Knight Movement (L-shape)
-  function isValidKnightMove(piece, newRow, newCol) {
+function isValidKnightMove(piece, newRow, newCol, boardToUse) {
     const { row, col } = piece;
-  
+
     const validKnightMoves = [
-      [row - 2, col - 1], [row - 2, col + 1],
-      [row - 1, col - 2], [row - 1, col + 2],
-      [row + 1, col - 2], [row + 1, col + 2],
-      [row + 2, col - 1], [row + 2, col + 1]
+        [row - 2, col - 1], [row - 2, col + 1],
+        [row - 1, col - 2], [row - 1, col + 2],
+        [row + 1, col - 2], [row + 1, col + 2],
+        [row + 2, col - 1], [row + 2, col + 1]
     ];
-  
+
     // Check if the new position is within the board and a valid knight move
     return validKnightMoves.some(([r, c]) => r === newRow && c === newCol &&
                                            (newRow >= 0 && newRow <= 7 && 
                                             newCol >= 0 && newCol <= 7) &&
-                                           (!isPieceAt(newRow, newCol) || isOpponentPiece(piece, newRow, newCol)));
+                                           (!isPieceAt(newRow, newCol, boardToUse) || isOpponentPiece(piece, newRow, newCol, boardToUse)));
 }
 
 // Bishop Movement
-function isValidBishopMove(piece, newRow, newCol) {
+function isValidBishopMove(piece, newRow, newCol, boardToUse) {
     const { row, col } = piece;
 
     // Check if the move is diagonal
-  if (Math.abs(newRow - row) !== Math.abs(newCol - col)) {
-    return false; // Not a diagonal move
-  }
-  // Determine the direction of the diagonal move
-  const rowDir = newRow > row ? 1 : -1;
-  const colDir = newCol > col ? 1 : -1;
-
-  // Check for obstacles in the path
-  let currentRow = row + rowDir;
-  let currentCol = col + colDir;
-  while (currentRow !== newRow) { // Stop one square before the destination
-    if (isPieceAt(currentRow, currentCol)) {
-      return false; // Obstacle in the way
+    if (Math.abs(newRow - row) !== Math.abs(newCol - col)) {
+        return false; // Not a diagonal move
     }
-    currentRow += rowDir;
-    currentCol += colDir;
-  }
+    // Determine the direction of the diagonal move
+    const rowDir = newRow > row ? 1 : -1;
+    const colDir = newCol > col ? 1 : -1;
 
-  // Check if the destination is empty or an opponent's piece
-  return !isPieceAt(newRow, newCol) || isOpponentPiece(piece, newRow, newCol);
+    // Check for obstacles in the path
+    let currentRow = row + rowDir;
+    let currentCol = col + colDir;
+    while (currentRow !== newRow) { // Stop one square before the destination
+        if (isPieceAt(currentRow, currentCol, boardToUse)) {
+            return false; // Obstacle in the way
+        }
+        currentRow += rowDir;
+        currentCol += colDir;
+    }
 
+    // Check if the destination is empty or an opponent's piece
+    return !isPieceAt(newRow, newCol, boardToUse) || isOpponentPiece(piece, newRow, newCol, boardToUse);
 }
 
 // King Movement (one square in any direction)
-function isValidKingMove(piece, newRow, newCol) {
+function isValidKingMove(piece, newRow, newCol, boardToUse) {
     const { row, col } = piece;
-  
+
     // Calculate the row and column differences
     const rowDiff = Math.abs(newRow - row);
     const colDiff = Math.abs(newCol - col);
-  
+
     // Check if the move is within one square in any direction
     if (rowDiff <= 1 && colDiff <= 1) { 
-      // Check if the destination is empty or an opponent's piece
-      return !isPieceAt(newRow, newCol) || isOpponentPiece(piece, newRow, newCol);
+        // Check if the destination is empty or an opponent's piece
+        return !isPieceAt(newRow, newCol, boardToUse) || isOpponentPiece(piece, newRow, newCol, boardToUse);
     }
-  
-    // Castling Logic (You'll need to implement this separately)
-    // if (isValidCastlingMove(piece, newRow, newCol)) {
-    //   return true; 
-    // }
-  
-    // Invalid move if not within one square or a valid castling move
+
+    // Invalid move if not within one square
     return false; 
-  }
+}
 
 // function isValidKingMove(piece, newRow, newCol) {
 //     const { row, col } = piece;
@@ -336,84 +241,145 @@ function isValidKingMove(piece, newRow, newCol) {
 // }
 
 // Queen Movement (horizontal, vertical, and diagonal)
-function isValidQueenMove(piece, newRow, newCol) {
-    const { row, col } = piece;
-  
-    // Check if moving horizontally, vertically, or diagonally
-    const isHorizontalOrVertical = (newRow === row || newCol === col);
-    const isDiagonal = (Math.abs(newRow - row) === Math.abs(newCol - col));
-  
-    if (!isHorizontalOrVertical && !isDiagonal) {
-      return false; // Not a valid queen move pattern
-    }
-  
-    // Check for obstacles (reusing Rook and Bishop logic)
-    if (isHorizontalOrVertical) {
-      // Reuse the Rook's obstacle checking logic:
-      return isValidRookMove(piece, newRow, newCol); 
-    } else if (isDiagonal) {
-      // Reuse the Bishop's obstacle checking logic:
-      return isValidBishopMove(piece, newRow, newCol); 
-    } 
+function isValidQueenMove(piece, newRow, newCol, boardToUse) {
+    // Queen moves like a rook or bishop
+    return isValidRookMove(piece, newRow, newCol, boardToUse) || 
+           isValidBishopMove(piece, newRow, newCol, boardToUse);
 }
 
-// Function to check if the king of the specified color is in check
-function isKingInCheck(kingColor) {
-    // 1. Find the King's Position:
-    let kingRow, kingCol;
+function findKing(color, boardToUse) {
     for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 8; col++) {
-        const pieceCode = board[row][col];
-        if (pieceCode && pieceCode === `${kingColor}-king`) { // Match pieceCode with king color
-          kingRow = row;
-          kingCol = col;
-        //   console.log(pieceCode);
-        //   console.log(kingRow,kingCol);
-          break; // Found the king, exit the inner loop
+        for (let col = 0; col < 8; col++) {
+            if (boardToUse[row][col] === `${color}-king`) {
+                return { row, col };
+            }
         }
-      }
-      if (kingRow !== undefined) break; // King found, exit the outer loop
     }
-  
-    // 2. Check if any opponent's piece can attack the king:
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 8; col++) {
-        const pieceCode = board[row][col];
-        if (pieceCode && pieceCode.startsWith(kingColor === 'white' ? 'black' : 'white')) { 
-          // It's an opponent's piece
-          const piece = { element: { classList: [pieceCode] }, row, col }; // Simulate a piece object
-            console.log(piece);
-          // Important: Assume a hypothetical move, DON'T actually move the piece
-          if (isValidMove(piece, kingRow, kingCol)) { 
-            // If an opponent's piece can "attack" the king's square, the king is in check
-            // console.log("King is in check");
-            return true; 
-          }
-        }
-      }
-    }
-  
-    //3. If no attack is found, the king is safe:
-    return false; 
+    return null;
 }
 
+// Function to check if a king is in check
+function isKingInCheck(color, simulatedBoard = null) {
+    const boardToUse = simulatedBoard || board;
+    const kingPos = findKing(color, boardToUse);
+    if (!kingPos) {
+        console.error(`Cannot check for check: ${color} king not found`);
+        return false;
+    }
+
+    const opponentColor = color === 'white' ? 'black' : 'white';
+
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const piece = boardToUse[row][col];
+            if (piece && piece.startsWith(opponentColor)) {
+                const pieceObj = { 
+                    element: piece,
+                    row,
+                    col
+                };
+                if (canPieceMove(pieceObj, kingPos.row, kingPos.col, boardToUse)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
   
 // Helper Functions:
 // (You might want to move these outside the event listener)
-function isPieceAt(row, col) {
-    const square = document.getElementById(`square-${row}-${col}`);
-    return square.querySelector('.piece') !== null; 
+function isPieceAt(row, col, boardToUse) {
+    return boardToUse[row][col] !== null;
 }
-  
-function isOpponentPiece(piece, row, col) {
-    const targetPiece = document.getElementById(`square-${row}-${col}`).querySelector('.piece');
-    if (!targetPiece) { // Return false if there's no piece at the destination
-      return false; 
+
+function isOpponentPiece(piece, row, col, boardToUse) {
+    const pieceType = typeof piece.element === 'string' ? piece.element : piece.element.classList[1];
+    const pieceColor = pieceType.split('-')[0];
+    const targetPiece = boardToUse[row][col];
+    if (!targetPiece) {
+        return false;
     }
-  
-    // Compare the first part of the class names to check for different colors
-    const pieceColor = piece.element.classList[1].split('-')[0]; // 'white' or 'black'
-    const targetColor = targetPiece.classList[1].split('-')[0]; // 'white' or 'black'
-  
-    return pieceColor !== targetColor; 
-  }
+    const targetColor = targetPiece.split('-')[0];
+    return pieceColor !== targetColor;
+}
+
+function canPieceMove(piece, newRow, newCol, boardToUse) {
+    const pieceType = typeof piece.element === 'string' ? piece.element : piece.element.classList[1];
+    
+    switch(pieceType) {
+        case 'white-pawn':
+        case 'black-pawn':
+            return isValidPawnMove(piece, newRow, newCol, boardToUse);
+        case 'white-rook':
+        case 'black-rook':
+            return isValidRookMove(piece, newRow, newCol, boardToUse);
+        case 'white-knight':
+        case 'black-knight':
+            return isValidKnightMove(piece, newRow, newCol, boardToUse);
+        case 'white-bishop':
+        case 'black-bishop':
+            return isValidBishopMove(piece, newRow, newCol, boardToUse);
+        case 'white-queen':
+        case 'black-queen':
+            return isValidQueenMove(piece, newRow, newCol, boardToUse);
+        case 'white-king':
+        case 'black-king':
+            return isValidKingMove(piece, newRow, newCol, boardToUse);
+        default:
+            return false;
+    }
+}
+
+function isValidMove(piece, newRow, newCol) {
+    const oldRow = piece.row;
+    const oldCol = piece.col;
+    const pieceType = piece.element.classList[1];
+    const pieceColor = pieceType.split('-')[0];
+
+    // Create a simulated board
+    const simulatedBoard = board.map(row => [...row]);
+    simulatedBoard[newRow][newCol] = simulatedBoard[oldRow][oldCol];
+    simulatedBoard[oldRow][oldCol] = null;
+
+    // Check if the move would leave the king in check
+    if (isKingInCheck(pieceColor, simulatedBoard)) {
+        return false;
+    }
+
+    // Check if the piece can make this move
+    return canPieceMove(piece, newRow, newCol, board);
+}
+
+// Modify the movePiece function to check for check after a move
+function movePiece(piece, newRow, newCol) {
+    const oldRow = piece.row;
+    const oldCol = piece.col;
+    const pieceColor = piece.element.classList[1].split('-')[0];
+
+    // Update the board array
+    board[newRow][newCol] = board[oldRow][oldCol];
+    board[oldRow][oldCol] = null;
+
+    // Update the DOM
+    const newSquare = document.getElementById(`square-${newRow}-${newCol}`);
+    const existingPiece = newSquare.querySelector('.piece');
+    if (existingPiece) {
+        newSquare.removeChild(existingPiece);
+    }
+    newSquare.appendChild(piece.element);
+
+    // Update the piece's internal position
+    piece.row = newRow;
+    piece.col = newCol;
+
+    // Check if the move results in a check
+    const opponentColor = pieceColor === 'white' ? 'black' : 'white';
+    if (isKingInCheck(opponentColor)) {
+        console.log(`${opponentColor}'s king is in check!`);
+        // You can add additional UI feedback here
+    }
+
+    // Switch turns
+    isWhiteTurn = !isWhiteTurn;
+}
